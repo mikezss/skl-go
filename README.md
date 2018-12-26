@@ -12,7 +12,8 @@
 ## Installation  
 * install golang by yourself  
 * install beego by yourself  
-* go install skl-golang  
+* go get github.com/mikezss/skl-go
+* go build main.go
 
 
 ## Usage  
