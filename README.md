@@ -1,7 +1,7 @@
 # skl-go  
 
 ## Project description  
-* 使用beego搭建企业级的管理后台开发平台。
+* 使用beego搭建企业级的管理后台开发平台  
 * 平台内嵌登录、用户、用户组、公司、角色、机构、权限、OA引擎等后台管理常用功能模块。  
 
 ## Features  
