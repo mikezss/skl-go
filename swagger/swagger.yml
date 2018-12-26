@@ -1,0 +1,49 @@
+swagger: "2.0"
+info:
+  title: beego Test API
+  description: beego has a very cool tools to autogenerate documents for your API
+  version: 1.0.0
+  termsOfService: http://beego.me/
+  contact:
+    email: astaxie@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+paths: {}
+definitions:
+  models.Object:
+    title: Object
+    type: object
+    properties:
+      ObjectId:
+        type: string
+      PlayerName:
+        type: string
+      Score:
+        type: integer
+        format: int64
+  models.Profile:
+    title: Profile
+    type: object
+    properties:
+      Address:
+        type: string
+      Age:
+        type: integer
+        format: int64
+      Email:
+        type: string
+      Gender:
+        type: string
+  models.User:
+    title: User
+    type: object
+    properties:
+      Id:
+        type: string
+      Password:
+        type: string
+      Profile:
+        $ref: '#/definitions/models.Profile'
+      Username:
+        type: string
