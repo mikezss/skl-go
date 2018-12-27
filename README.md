@@ -27,7 +27,7 @@
 
 
 ## Usage  
-* cd %goproject%/github.com/mikezss/skl-go  
+* cd %gopath%/github.com/mikezss/skl-go  
 * go build main.go  
 * main.exe (windows user)  
 
