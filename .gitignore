@@ -3,3 +3,5 @@
 *.db
 *.db
 skl-go.db
+*.exe
+*.exe
