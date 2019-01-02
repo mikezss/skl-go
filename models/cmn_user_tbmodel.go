@@ -347,7 +347,7 @@ func GetNAVIGATORMODUALBYUSER(u CMN_USER_TB) (admins2 []CMN_MODUAL_TB, err error
 	sql = sql + " union SELECT  b.userid,a.roleid FROM  cmn_orgrole_tb a inner join  cmn_user_tb b on a.orgid=b.orgid where b.userid=? "
 	sql = sql + " union select '',roleid from  cmn_roleprivilege_tb  where roleid='root')c on b.roleid=c.roleid "
 	sql = sql + " inner join cmn_modual_tb d on d.modualid=a.parentid "
-	sql = sql + " where a.url!='' and a.url is not null "
+	sql = sql + " where a.url!='' and a.url is not null order by d.displayno"
 
 	sql = ConvertSQL(sql, Getdbtype())
 	_, err = o.Raw(sql, u.Userid, u.Userid, u.Userid).QueryRows(&admins)
@@ -367,7 +367,7 @@ func GetMENUMODUALBYPARENT(u CMN_USERMODUAL_TB) (admins2 []CMN_MODUAL_TB, err er
 	sql = sql + " union SELECT   b.userid,a.roleid  FROM  cmn_grouprole_tb a inner join  cmn_usergroup_tb b on a.groupid=b.groupid where b.userid=? "
 	sql = sql + " union SELECT  b.userid,a.roleid FROM  cmn_orgrole_tb a inner join  cmn_user_tb b on a.orgid=b.orgid where b.userid=? "
 	sql = sql + " union select '',roleid from  cmn_roleprivilege_tb  where roleid='root')c on b.roleid=c.roleid "
-	sql = sql + " where a.url!='' and a.url is not null and a.parentid=?"
+	sql = sql + " where a.url!='' and a.url is not null and a.parentid=? order by a.displayno"
 	sql = ConvertSQL(sql, Getdbtype())
 	_, err = o.Raw(sql, u.Userid, u.Userid, u.Userid, u.Modualid).QueryRows(&admins)
 	for _, admin := range admins {
