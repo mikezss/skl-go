@@ -37,6 +37,10 @@ type LANGPAGEINDEX struct {
 	Pageindex int
 	Pagesize  int
 }
+type PROJECTPATH struct {
+	Godirectory string
+	Ngdirectory string
+}
 
 func (u *CMN_LANG_TB) TableName() string {
 	return "cmn_lang_tb"
@@ -504,4 +508,36 @@ func ConvertGBK2unicode(gbkstr string) string {
 	textQuoted := strconv.QuoteToASCII(gbkstr)
 	textUnquoted := textQuoted[1 : len(textQuoted)-1]
 	return textUnquoted
+}
+func SAVEPROJECTPATH(u PROJECTPATH) error {
+	o := orm.NewOrm()
+	err := o.Begin()
+
+	updatesql := "update dev_component_tb set godirectory=?,ngdirectory=?  where componentlevel='0'"
+
+	updatesql = ConvertSQL(updatesql, Getdbtype())
+
+	_, err = o.Raw(updatesql, u.Godirectory, u.Ngdirectory).Exec()
+	if err != nil {
+		fmt.Println(err)
+		o.Rollback()
+		return err
+	}
+
+	err = o.Commit()
+	return err
+}
+func GETPROJECTPATH() (u PROJECTPATH, err error) {
+	o := orm.NewOrm()
+	sql := "select  godirectory,ngdirectory from dev_component_tb  where componentlevel='0'"
+
+	sql = ConvertSQL(sql, Getdbtype())
+
+	err = o.Raw(sql).QueryRow(&u)
+	if err != nil {
+		fmt.Println(err)
+		o.Rollback()
+		return u, err
+	}
+	return u, nil
 }

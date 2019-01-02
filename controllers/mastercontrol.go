@@ -1687,3 +1687,56 @@ func (ctl *MASTERController) Updatelangjson() {
 	}
 
 }
+
+// @Description create users
+// @Param	body		body 	models.User	true		"body for user content"
+// @Success 200 {int} models.User.Id
+// @Failure 403 body is empty
+// @router / [post]
+func (ctl *MASTERController) Updateprojectpath() {
+	var status = ""
+	ob := models.PROJECTPATH{}
+	beego.Debug(string(ctl.Ctx.Input.RequestBody))
+	err := json.Unmarshal(ctl.Ctx.Input.RequestBody, &ob)
+	if err != nil {
+		beego.Error(err)
+	}
+	err = models.SAVEPROJECTPATH(ob)
+
+	if err != nil {
+
+		status = "false"
+		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.ServeJSON()
+		return
+	} else {
+		status = "ok"
+		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.ServeJSON()
+	}
+
+}
+
+// @Description create users
+// @Param	body		body 	models.User	true		"body for user content"
+// @Success 200 {int} models.User.Id
+// @Failure 403 body is empty
+// @router / [post]
+func (ctl *MASTERController) Getprojectpath() {
+	var status = ""
+
+	ob, err := models.GETPROJECTPATH()
+
+	if err != nil {
+
+		status = "false"
+		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.ServeJSON()
+		return
+	} else {
+		status = "ok"
+		ctl.Data["json"] = ob
+		ctl.ServeJSON()
+	}
+
+}
