@@ -1055,3 +1055,74 @@ func Tolower(s string) string {
 func Replace(s string, oldstr string, newstr string) string {
 	return strings.Replace(s, oldstr, newstr, -1)
 }
+
+//获得两个日期的间隔天数
+func Diffdays(startdate time.Time, enddate time.Time) int64 {
+	//月份 1,01,Jan,January
+	//日　 2,02,_2
+	//时　 3,03,15,PM,pm,AM,am
+	//分　 4,04
+	//秒　 5,05
+	//年　 06,2006
+	//周几 Mon,Monday
+	//时区时差表示 -07,-0700,Z0700,Z07:00,-07:00,MST
+	//时区字母缩写 MST
+	// startyear := startdate.Format("2006")
+	// startmonth := startdate.Format("01")
+	// startday := startdate.Format("02")
+
+	// endyear := enddate.Format("2006")
+	// endmonth := enddate.Format("01")
+	// endday := enddate.Format("02")
+	//fmt.Println(enddate.Unix())
+	fmt.Println(enddate.UnixNano())
+	fmt.Println(startdate.UnixNano())
+	fmt.Println(enddate.UnixNano() - startdate.UnixNano())
+	return (enddate.UnixNano() - startdate.UnixNano()) / (24 * 60 * 60 * 1000 * 1000 * 1000)
+}
+
+//获取相差时间
+func GetHourDiffer(start_time, end_time string) int64 {
+	var hour int64
+	t1, err := time.ParseInLocation("2006-01-02 15:04:05", start_time, time.Local)
+	if err != nil {
+		fmt.Println(err)
+		return -1
+	}
+	t2, err := time.ParseInLocation("2006-01-02 15:04:05", end_time, time.Local)
+	if err != nil {
+		fmt.Println(err)
+		return -1
+	}
+	if err == nil && t1.Before(t2) {
+		diff := t2.Unix() - t1.Unix() //
+		hour = diff / 3600
+		return hour
+	} else {
+		return hour
+	}
+
+}
+
+//获取相差时间
+func GetMinuteDiffer(start_time, end_time string) int64 {
+	var hour int64
+	t1, err := time.ParseInLocation("2006-01-02 15:04:05", start_time, time.Local)
+	if err != nil {
+		fmt.Println(err)
+		return -1
+	}
+	t2, err := time.ParseInLocation("2006-01-02 15:04:05", end_time, time.Local)
+	if err != nil {
+		fmt.Println(err)
+		return -1
+	}
+	if err == nil && t1.Before(t2) {
+		diff := t2.Unix() - t1.Unix() //
+		hour = diff / 60
+		return hour
+	} else {
+		return hour
+	}
+
+}
