@@ -70,6 +70,7 @@ type OPTIONS struct {
 func (u *CMN_FILEINFO_TB) TableName() string {
 	return "cmn_fileinfo_tb"
 }
+
 func AddCMN_FILEINFO_TB(u *CMN_FILEINFO_TB) error {
 	o := orm.NewOrm()
 	err := o.Begin()

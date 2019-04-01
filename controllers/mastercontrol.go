@@ -233,6 +233,24 @@ func (ctl *MASTERController) Getallorgoptions() {
 	}
 
 }
+func (ctl *MASTERController) Getallgroupoptions() {
+	var status = ""
+
+	ob, err := models.GetAllGroupoptions()
+
+	if err != nil {
+
+		status = "false"
+		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.ServeJSON()
+		return
+	} else {
+		status = "ok"
+		ctl.Data["json"] = ob
+		ctl.ServeJSON()
+	}
+
+}
 
 // @Title createUser
 // @Description create users

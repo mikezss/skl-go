@@ -286,3 +286,17 @@ func GetCMN_USERGROUP_TB(u CMN_GROUP_TB) (admins []CMN_USERGROUP_TB, err error) 
 
 	return admins, err
 }
+func GetAllGroupoptions() (admins []OPTIONS, err error) {
+
+	admins = make([]OPTIONS, 0)
+	o := orm.NewOrm()
+
+	sql := "select a.groupid as value,a.groupname as label from cmn_group_tb a  order by grouplevel"
+
+	_, err = o.Raw(ConvertSQL(sql, Getdbtype())).QueryRows(&admins)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(admins)
+	return admins, err
+}

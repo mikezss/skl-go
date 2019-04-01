@@ -815,7 +815,7 @@ func Doflow(o orm.Ormer, modualid string, currentfiid int, currenttiid int, acti
 			return 0, err, false
 		}
 		//提交时
-		if actionid == "submit" {
+		if actionid != "save" {
 			sql = "select b.* from cmn_modualtemplate_tb a "
 			sql = sql + " inner join fi_flowtask_tb b on a.flowtemplateid=b.flowtemplateid and b.taskid='1' "
 			sql = sql + " where a.modualid=? "
@@ -913,12 +913,9 @@ func insertfirstflow(o orm.Ormer, modualid string, u MODUALCNTANDMNY, actionid s
 		return 0, err
 	}
 	var flowstatus string
-	if actionid == "save" {
-		flowstatus = "0"
-	}
-	if actionid == "submit" {
-		flowstatus = "0"
-	}
+	//是否需要第一个节点的限制条件？
+	flowstatus = "0"
+
 	//插入fi_flow表
 	ff := FIFLOW{
 		Fiid:           flowintid,
@@ -951,7 +948,7 @@ func insertfirstflow(o orm.Ormer, modualid string, u MODUALCNTANDMNY, actionid s
 		direction = ""
 		editor = ""
 	}
-	if actionid == "submit" {
+	if actionid != "save" {
 		taskstatus = "1"
 		direction = "1"
 		editor = u.Submitter
@@ -973,23 +970,23 @@ func insertfirstflow(o orm.Ormer, modualid string, u MODUALCNTANDMNY, actionid s
 		o.Rollback()
 		return 0, err
 	}
-	if actionid == "save" || actionid == "submit" {
-		sql := "update fi_var set vvalue=? where fiid=? and vid=?"
-		sql = ConvertSQL(sql, Getdbtype())
-		if varmap != nil {
-			for _, varmap1 := range varmap {
-				for key, value := range varmap1 {
-					_, err = o.Raw(sql, value, flowintid, key).Exec()
-					if err != nil {
-						fmt.Println(err)
-						o.Rollback()
-						return -1, err
-					}
+	//if actionid == "save" || actionid == "submit" {
+	sql = "update fi_var set vvalue=? where fiid=? and vid=?"
+	sql = ConvertSQL(sql, Getdbtype())
+	if varmap != nil {
+		for _, varmap1 := range varmap {
+			for key, value := range varmap1 {
+				_, err = o.Raw(sql, value, flowintid, key).Exec()
+				if err != nil {
+					fmt.Println(err)
+					o.Rollback()
+					return -1, err
 				}
 			}
 		}
-
 	}
+
+	//}
 	return flowintid, nil
 }
 
@@ -1228,14 +1225,17 @@ func insertsecondflow(o orm.Ormer, flt FLOWTASK, actionid string, currenttiid in
 		sql = "select caller from fi_flow where fiid=?"
 		err = o.Raw(ConvertSQL(sql, dbtype), fiid).QueryRow(&caller)
 	}
-	if actionid == "submit" {
+	if actionid != "save" && (currenttiid == 0 || Gettaskidbytiid(o, currenttiid) == "1") {
 		//级别高的人员提交时跳过级别低的人员审批，但用户、用户组、角色、自动分支不跳过
 		var orglevel string
 		sql = "select orglevel from cmn_org_tb a inner join cmn_user_tb b on a.orgid=b.orgid where b.userid=?"
 		_ = o.Raw(ConvertSQL(sql, dbtype), caller).QueryRow(&orglevel)
-		sql = "select nexttask from fi_flowmantaskaction_tb where flowtemplateid=? and taskid='1' and action='submit'"
-		_ = o.Raw(ConvertSQL(sql, dbtype), flt.Flowtemplateid).QueryRow(&nexttaskid)
-		nexttaskid, err = Getnexttaskbycaller(orglevel, nexttaskid, o, caller, flt.Flowtemplateid)
+		sql = "select nexttask from fi_flowmantaskaction_tb where flowtemplateid=? and taskid='1' and action=?"
+		_ = o.Raw(ConvertSQL(sql, dbtype), flt.Flowtemplateid, actionid).QueryRow(&nexttaskid)
+		nexttaskid, err = Getnexttaskbycaller(orglevel, nexttaskid, o, caller, flt.Flowtemplateid, actionid)
+		if err != nil {
+			return err, false
+		}
 		if nexttaskid == "999" {
 			err = endflow(o, submitter, modualid, fiid, currenttiid)
 			if err != nil {
@@ -1277,10 +1277,12 @@ func insertsecondflow(o orm.Ormer, flt FLOWTASK, actionid string, currenttiid in
 }
 
 //更新流程。保存后提交或者审批时。
+//第一个节点保存或提交，需要重新更新流程相关变量
 func updateflow(o orm.Ormer, currentfiid int, currenttiid int, actionid string, fv []FIVAR, u MODUALCNTANDMNY, flt FLOWTASK) (err error) {
 	var sql string
 	dbtype := Getdbtype()
-	if actionid == "save" || actionid == "submit" {
+	//支持第一次申请和驳回后再次申请
+	if currenttiid == 0 || Gettaskidbytiid(o, currenttiid) == "1" {
 		var caller string
 		sql = "select caller from fi_flow where fiid=?"
 		err = o.Raw(ConvertSQL(sql, dbtype), currentfiid).QueryRow(&caller)
@@ -1385,11 +1387,11 @@ func getnextval(o orm.Ormer, sequencename string) (returnvalue int, err error) {
 	return nextvalue, nil
 }
 
-//变量functions :>= 0
-//<= 1
+// 变量functions :>= 0
+// <= 1
 // > 2
 // < 3
-//= 4
+// = 4
 func comparefunction(orgivalue string, functions string, valuee string) (isequal bool, err error) {
 
 	forgivalue, err1 := strconv.ParseFloat(orgivalue, 32/64)
@@ -1435,6 +1437,7 @@ func comparefunction(orgivalue string, functions string, valuee string) (isequal
 //操作人直属指定级别机构副主管/副主管 14
 //操作人直属指定级别机构主管 15
 //操作人直属指定级别机构副主管 16
+//目前实现了最常用的 1 2 3 5 6 7，其它todo
 func geteditors(o orm.Ormer, caller string, flte []FLOWTASKEXECUTER) []string {
 	editors := make([]string, 0)
 	for _, flte1 := range flte {
@@ -1576,7 +1579,7 @@ func Gettodotask(u FIFLOW) (admins []TODOTASKLIST, err error) {
 	admins = make([]TODOTASKLIST, 0)
 	o := orm.NewOrm()
 
-	sql := "SELECT a.fiid,a.caller,e.modualname||'/'||a.flowcontent as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
+	sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
 	sql = sql + "  e.url,f.flowstatusname,g.taskname from fi_flow a "
 	sql = sql + "  inner join fi_task b on a.fiid=b.fiid and taskstatus='0' "
 	sql = sql + "  inner join fi_owner c on b.tiid=c.tiid and c.owner=? "
@@ -1612,7 +1615,7 @@ func Getdonetask(u FIFLOW) (admins []TODOTASKLIST, err error) {
 	admins = make([]TODOTASKLIST, 0)
 	o := orm.NewOrm()
 
-	sql := "SELECT a.fiid,a.caller,e.modualname||'/'||a.flowcontent as flowcontent,b.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
+	sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,b.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
 	sql = sql + "  e.url,f.flowstatusname,g.taskname  from fi_flow a "
 	sql = sql + "  inner join fi_task b on a.fiid=b.fiid and taskstatus='1' and b.editor='" + u.Caller + "' "
 	sql = sql + "  inner join cmn_modualtemplate_tb d on a.flowtemplateid=d.flowtemplateid and a.modualid=d.modualid "
@@ -1704,7 +1707,7 @@ func Getflowmonitorbypageindex(u FIFLOWPAGEINDEX) (admins []TODOTASKLIST, err er
 	admins = make([]TODOTASKLIST, 0)
 	o := orm.NewOrm()
 
-	sql := "SELECT a.fiid,a.caller,e.modualname||'/'||a.flowcontent as flowcontent,c.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
+	sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,c.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
 	sql = sql + "  e.url,f.flowstatusname,g.taskname  from fi_flow a "
 	sql = sql + "  inner join (select max(tiid) as tiid,fiid from fi_task group by fiid) b on a.fiid=b.fiid "
 	sql = sql + "  inner join fi_task c on b.tiid=c.tiid and b.fiid=c.fiid "
@@ -1753,7 +1756,7 @@ func Getmyflow(u FIFLOW) (admins []TODOTASKLIST, err error) {
 	admins = make([]TODOTASKLIST, 0)
 	o := orm.NewOrm()
 
-	sql := "SELECT a.fiid,a.caller,e.modualname||a.flowcontent as flowcontent,c.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
+	sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,c.taskid,a.flowstarttime,a.flowfinishtime,a.flowstatus,b.tiid,a.flowtemplateid, "
 	sql = sql + "  e.url,f.supportskip,g.flowstatusname,f.taskname  from fi_flow a "
 	sql = sql + "  inner join (select max(tiid) as tiid,fiid from fi_task group by fiid) b on a.fiid=b.fiid "
 	sql = sql + "  inner join fi_task c on a.fiid=c.fiid and c.tiid=b.tiid "
@@ -1849,6 +1852,8 @@ func Cancelflow(u FIFLOW) (err error) {
 }
 
 //跳过任务节点
+//支持跳转的节点必须有actionid="next"配置，否则报错
+//todo： 有唯一的forward任务也可
 func Skiptask(u TODOTASKLIST) (err error) {
 
 	o := orm.NewOrm()
@@ -2103,7 +2108,7 @@ func AddMultiFLOWSTATUS(u []FISTATUS) error {
 //操作人直属指定级别机构主管 15
 //操作人直属指定级别机构副主管 16
 
-func Getnexttaskbycaller(orglevel string, nexttaskid string, o orm.Ormer, caller string, flowtemplateid string) (nexttaskid1 string, err error) {
+func Getnexttaskbycaller(orglevel string, nexttaskid string, o orm.Ormer, caller string, flowtemplateid string, actionid string) (nexttaskid1 string, err error) {
 	dbtype := Getdbtype()
 	var tasktype string
 	sql := "select tasktype from fi_flowtask_tb where flowtemplateid=? and taskid=?"
@@ -2159,12 +2164,15 @@ func Getnexttaskbycaller(orglevel string, nexttaskid string, o orm.Ormer, caller
 			}
 		}
 		var nexttaskid2 string
-		sql = "select nexttask from fi_flowmantaskaction_tb where flowtemplateid=? and taskid=? and action='next'"
-		_ = o.Raw(ConvertSQL(sql, dbtype), flowtemplateid, nexttaskid).QueryRow(&nexttaskid2)
+		sql = "select nexttask from fi_flowmantaskaction_tb where flowtemplateid=? and taskid=? and action=?"
+		_ = o.Raw(ConvertSQL(sql, dbtype), flowtemplateid, nexttaskid, actionid).QueryRow(&nexttaskid2)
 		if nexttaskid2 == "999" {
 			return "999", nil
 		}
-		return Getnexttaskbycaller(orglevel, nexttaskid2, o, caller, flowtemplateid)
+		if nexttaskid2 == "" {
+			return "-1", errors.New("can't find nexttaskid by " + nexttaskid)
+		}
+		return Getnexttaskbycaller(orglevel, nexttaskid2, o, caller, flowtemplateid, actionid)
 
 	}
 }
@@ -2226,8 +2234,7 @@ func GetUserforagent(ufa USERFORAGENT) (admins []PROFILE, err error) {
 		} else {
 			sql = sql + " and isleader=1"
 		}
-	}
-	if ufa.Isleader == false {
+	} else {
 
 		if dbtype == "postgres" {
 			sql = sql + " and isleader=false"
@@ -2264,8 +2271,7 @@ func GetUserforagentoptions(ufa USERFORAGENT) (admins []OPTIONS, err error) {
 		} else {
 			sql = sql + " and isleader=1"
 		}
-	}
-	if ufa.Isleader == false {
+	} else {
 
 		if dbtype == "postgres" {
 			sql = sql + " and isleader=false"
@@ -2544,7 +2550,7 @@ func Gettodotaskfortransfer(u TRANSFER) (admins []TODOTASKLIST, err error) {
 	o := orm.NewOrm()
 	dbtype := Getdbtype()
 	if u.Usertype == "0" {
-		sql := "SELECT a.fiid,a.caller,e.modualname||'/'||a.flowcontent as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
+		sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
 		sql = sql + "  e.url,f.flowstatusname,c.owner as editor from fi_flow a "
 		sql = sql + "  inner join fi_task b on a.fiid=b.fiid and taskstatus='0' "
 		sql = sql + "  inner join fi_owner c on b.tiid=c.tiid "
@@ -2555,7 +2561,7 @@ func Gettodotaskfortransfer(u TRANSFER) (admins []TODOTASKLIST, err error) {
 		_, err = o.Raw(ConvertSQL(sql, dbtype), u.Userid).QueryRows(&admins)
 	}
 	if u.Usertype == "1" {
-		sql := "SELECT a.fiid,a.caller,e.modualname||'/'||a.flowcontent as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
+		sql := "SELECT a.fiid,a.caller,CONCAT_WS('/',e.modualname,a.flowcontent) as flowcontent,b.taskid,a.flowstarttime,a.flowstatus,c.tiid,a.flowtemplateid, "
 		sql = sql + "  e.url,f.flowstatusname,c.owner as editor from fi_flow a "
 		sql = sql + "  inner join fi_task b on a.fiid=b.fiid and taskstatus='0' "
 		sql = sql + "  inner join fi_owner c on b.tiid=c.tiid and c.owner=? "
@@ -2566,4 +2572,29 @@ func Gettodotaskfortransfer(u TRANSFER) (admins []TODOTASKLIST, err error) {
 		_, err = o.Raw(ConvertSQL(sql, dbtype), u.Userid).QueryRows(&admins)
 	}
 	return admins, err
+}
+
+//根据tiid获得当前的任务ID
+func Gettaskidbytiid(o orm.Ormer, tiid int) string {
+	dbtype := Getdbtype()
+	taskid := "1"
+	sql := "select taskid from fi_task where tiid=?"
+	err := o.Raw(ConvertSQL(sql, dbtype), tiid).QueryRow(&taskid)
+	if err != nil {
+		taskid = "-1"
+	}
+	return taskid
+}
+
+//根据tiid获得当前的任务ID
+func Gettaskidbytiidforng(tiid int) string {
+	o := orm.NewOrm()
+	dbtype := Getdbtype()
+	taskid := "1"
+	sql := "select taskid from fi_task where tiid=?"
+	err := o.Raw(ConvertSQL(sql, dbtype), tiid).QueryRow(&taskid)
+	if err != nil {
+		taskid = "-1"
+	}
+	return taskid
 }

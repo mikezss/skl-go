@@ -148,6 +148,11 @@ func DeleteENUM(u *ENUM) error {
 	sql := "delete from skl_enumitem_tb where enumcode=?"
 	sql = ConvertSQL(sql, Getdbtype())
 	_, err = o.Raw(sql, u.Enumcode).Exec()
+	if err != nil {
+		fmt.Println(err)
+		o.Rollback()
+		return err
+	}
 	err = o.Commit()
 
 	return err

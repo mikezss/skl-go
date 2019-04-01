@@ -1059,3 +1059,33 @@ func (ctl *FLOWController) Getflowmonitorcount() {
 		ctl.ServeJSON()
 	}
 }
+
+// @Title createUser
+// @Description create users
+// @Param	body		body 	models.User	true		"body for user content"
+// @Success 200 {int} models.User.Id
+// @Failure 403 body is empty
+// @router / [post]
+func (ctl *FLOWController) Gettaskidbytiidforng() {
+	var err error
+	fif := models.FITASK{}
+
+	beego.Debug(string(ctl.Ctx.Input.RequestBody))
+	err = json.Unmarshal(ctl.Ctx.Input.RequestBody, &fif)
+	if err != nil {
+		beego.Error(err)
+	}
+
+	fif.Taskid = models.Gettaskidbytiidforng(fif.Tiid)
+
+	if err != nil {
+
+		ctl.Data["json"] = map[string]string{"status": err.Error()}
+		ctl.ServeJSON()
+		return
+	} else {
+
+		ctl.Data["json"] = fif
+		ctl.ServeJSON()
+	}
+}

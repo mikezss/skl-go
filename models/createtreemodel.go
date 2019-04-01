@@ -376,6 +376,7 @@ func Addnode(json *Json, m2 map[string]Node, id string) string {
 	json.Treejson = json.Treejson + "\"isChecked\":" + n.Checked + ","
 	json.Treejson = json.Treejson + "\"checked\":" + n.Checked
 	if n.Url != "" {
+		json.Treejson = json.Treejson + ",\"isLeaf\":true"
 		json.Treejson = json.Treejson + ",\"url\":\"" + n.Url + "\"\r\n"
 
 	}

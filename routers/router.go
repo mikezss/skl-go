@@ -20,4 +20,5 @@ func init() {
 	beego.AutoRouter(&controllers.COMMONController{})
 	beego.AutoRouter(&controllers.ENUMController{})
 	beego.AutoRouter(&controllers.COMPANYController{})
+    beego.AutoRouter(&controllers.ENUMSEARCHController{})
 }

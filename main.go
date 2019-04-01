@@ -92,13 +92,14 @@ func registerDB() string {
 	case "mysql":
 
 		ds = append(ds, iniconf.String(dbtype+"::username")+":")
-		ds = append(ds, iniconf.String(dbtype+"::password")+"@/")
-		//ds = append(ds, iniconf.String(dbtype+"::hostname")+":")
-		//ds = append(ds, iniconf.String(dbtype+"::port")+"/")
+		ds = append(ds, iniconf.String(dbtype+"::password")+"@tcp(")
+		ds = append(ds, iniconf.String(dbtype+"::hostname")+":")
+		ds = append(ds, iniconf.String(dbtype+"::port")+")/")
 		ds = append(ds, iniconf.String(dbtype+"::dbname")+"?charset=utf8")
 
 		datasourcename = strings.Join(ds, "")
 		fmt.Println(datasourcename)
+		//datasourcename:-->root:root@tcp(localhost:3306)/skl-ticket?charset=utf8
 		//tcp:localhost:3306*mydb/root/rootroot
 		orm.RegisterDriver("mysql", orm.DRMySQL)
 
@@ -143,7 +144,14 @@ func createTable(dbtype string) {
 	}
 	dbtype2 := iniconf.String("dbtype")
 	fmt.Println("dbtype:-->" + dbtype2)
-	initTable(dbtype2)
+
+	inittable := iniconf.String("inittable")
+	fmt.Println("inittable:-->" + inittable)
+
+	if inittable == "true" {
+		initTable(dbtype2)
+	}
+
 }
 
 //
