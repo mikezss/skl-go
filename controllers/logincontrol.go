@@ -44,7 +44,7 @@ func (ctl *LOGINController) Login() {
 	if !isok {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {

@@ -36,7 +36,7 @@ func (ctl *FLOWController) Saveflowtemplate() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -67,7 +67,7 @@ func (ctl *FLOWController) Copyflowtemplate() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -92,7 +92,7 @@ func (ctl *FLOWController) Getflowtemplate() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -117,7 +117,7 @@ func (ctl *FLOWController) Getflowtemplateoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -148,7 +148,7 @@ func (ctl *FLOWController) Getflowtemplateitem() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -179,7 +179,7 @@ func (ctl *FLOWController) Getflowtemplatebyid() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -210,7 +210,7 @@ func (ctl *FLOWController) Deleteflowtemplate() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -242,7 +242,7 @@ func (ctl *FLOWController) Saveflowtask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -307,7 +307,7 @@ func (ctl *FLOWController) Getflowtask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -339,7 +339,7 @@ func (ctl *FLOWController) Deleteflowtask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -370,7 +370,7 @@ func (ctl *FLOWController) Gettaskinfo() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -401,7 +401,7 @@ func (ctl *FLOWController) Gettodotask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -432,7 +432,7 @@ func (ctl *FLOWController) Gettodotasklist() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -463,7 +463,7 @@ func (ctl *FLOWController) Getdonetask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -494,7 +494,7 @@ func (ctl *FLOWController) Getdonetasklist() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -525,7 +525,7 @@ func (ctl *FLOWController) Getflowmonitorbypageindex() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -556,7 +556,7 @@ func (ctl *FLOWController) Getmyflow() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -586,7 +586,7 @@ func (ctl *FLOWController) Cancelflow() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -616,7 +616,7 @@ func (ctl *FLOWController) Skiptask() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -1020,7 +1020,7 @@ func (ctl *FLOWController) Gettodotaskfortransfer() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {

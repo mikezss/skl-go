@@ -338,9 +338,8 @@ func GetALLCMN_USERROLEMODUAL_TB(u CMN_USER_TB) (admins2 []CMN_MODUAL_TB, err er
 }
 func GetNAVIGATORMODUALBYUSER(u CMN_USER_TB) (admins2 []CMN_MODUAL_TB, err error) {
 	admins := make([]CMN_MODUAL_TB, 0)
-	admins2 = make([]CMN_MODUAL_TB, 0)
 	o := orm.NewOrm()
-	sql := "select distinct d.modualid,d.parentid,d.modualname,d.url,d.remark from cmn_modual_tb a "
+	sql := "select distinct d.modualid,d.parentid,d.modualname,d.url,d.remark,d.displayno from cmn_modual_tb a "
 	sql = sql + " inner join cmn_roleprivilege_tb b on a.modualid=b.modualid "
 	sql = sql + " inner join (select  userid,roleid from cmn_userrole_tb where userid=? "
 	sql = sql + " union SELECT   b.userid,a.roleid  FROM  cmn_grouprole_tb a inner join  cmn_usergroup_tb b on a.groupid=b.groupid where b.userid=? "
@@ -351,17 +350,17 @@ func GetNAVIGATORMODUALBYUSER(u CMN_USER_TB) (admins2 []CMN_MODUAL_TB, err error
 
 	sql = ConvertSQL(sql, Getdbtype())
 	_, err = o.Raw(sql, u.Userid, u.Userid, u.Userid).QueryRows(&admins)
-	for _, admin := range admins {
-		admins2 = append(admins2, admin)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	return admins2, err
+	return admins, err
 }
 func GetMENUMODUALBYPARENT(u CMN_USERMODUAL_TB) (admins2 []CMN_MODUAL_TB, err error) {
 	admins := make([]CMN_MODUAL_TB, 0)
 	admins2 = make([]CMN_MODUAL_TB, 0)
 	o := orm.NewOrm()
-	sql := "select distinct a.modualid,a.parentid,a.modualname,a.url,a.remark from cmn_modual_tb a "
+	sql := "select distinct a.modualid,a.parentid,a.modualname,a.url,a.remark,a.displayno from cmn_modual_tb a "
 	sql = sql + " inner join cmn_roleprivilege_tb b on a.modualid=b.modualid "
 	sql = sql + " inner join (select  userid,roleid from cmn_userrole_tb where userid=? "
 	sql = sql + " union SELECT   b.userid,a.roleid  FROM  cmn_grouprole_tb a inner join  cmn_usergroup_tb b on a.groupid=b.groupid where b.userid=? "

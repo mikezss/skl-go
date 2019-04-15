@@ -37,7 +37,7 @@ func (ctl *ENUMSEARCHController) Getenumsearchbypageindex() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {

@@ -60,7 +60,7 @@ func (ctl *MASTERController) Getallmodual() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -85,7 +85,7 @@ func (ctl *MASTERController) Getallmodualoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -116,7 +116,7 @@ func (ctl *MASTERController) Getmodual() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -149,7 +149,7 @@ func (ctl *MASTERController) Deletemodual() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -205,7 +205,7 @@ func (ctl *MASTERController) Getallorg() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -223,7 +223,7 @@ func (ctl *MASTERController) Getallorgoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -241,7 +241,7 @@ func (ctl *MASTERController) Getallgroupoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -275,7 +275,7 @@ func (ctl *MASTERController) Getorg() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -308,7 +308,7 @@ func (ctl *MASTERController) Deleteorg() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -326,7 +326,7 @@ func (ctl *MASTERController) Getleaders() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -560,7 +560,7 @@ func (ctl *MASTERController) Getallrole() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -585,7 +585,7 @@ func (ctl *MASTERController) Getallroleoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -616,7 +616,7 @@ func (ctl *MASTERController) Getrole() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -649,7 +649,7 @@ func (ctl *MASTERController) Deleterole() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -877,7 +877,7 @@ func (ctl *MASTERController) Getallgroup() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -908,7 +908,7 @@ func (ctl *MASTERController) Getgroup() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -959,7 +959,7 @@ func (ctl *MASTERController) Deletegroup() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1505,7 +1505,7 @@ func (ctl *MASTERController) Savelang() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -1530,7 +1530,7 @@ func (ctl *MASTERController) Getlang() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1559,7 +1559,7 @@ func (ctl *MASTERController) Getlangcount() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1588,7 +1588,7 @@ func (ctl *MASTERController) Getlangbypageindex() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1616,7 +1616,7 @@ func (ctl *MASTERController) Getnavigatormodualbyuser() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1644,7 +1644,7 @@ func (ctl *MASTERController) Getmenumodualbyparent() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1667,7 +1667,7 @@ func (ctl *MASTERController) Loadlangjson() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1695,7 +1695,7 @@ func (ctl *MASTERController) Updatelangjson() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1724,7 +1724,7 @@ func (ctl *MASTERController) Updateprojectpath() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {
@@ -1748,7 +1748,7 @@ func (ctl *MASTERController) Getprojectpath() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 		return
 	} else {

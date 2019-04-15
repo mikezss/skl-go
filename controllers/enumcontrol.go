@@ -61,7 +61,7 @@ func (ctl *ENUMController) Getenum() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -85,7 +85,7 @@ func (ctl *ENUMController) Getenumoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -115,7 +115,7 @@ func (ctl *ENUMController) Getenumbyid() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -146,7 +146,7 @@ func (ctl *ENUMController) Getenumitem() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -177,7 +177,7 @@ func (ctl *ENUMController) Getenumitemoptions() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
@@ -208,7 +208,7 @@ func (ctl *ENUMController) Deleteenumbyid() {
 	if err != nil {
 
 		status = "false"
-		ctl.Data["json"] = map[string]string{"status": status}
+		ctl.Data["json"] = map[string]string{"status": status, "result": err.Error()}
 		ctl.ServeJSON()
 
 	} else {
