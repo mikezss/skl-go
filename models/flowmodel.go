@@ -1587,9 +1587,13 @@ func Gettodotask(u FIFLOW) (admins []TODOTASKLIST, err error) {
 	sql = sql + "  inner join fi_flowstatus f on a.flowstatus=f.flowstatus "
 	sql = sql + "  inner join fi_flowtask_tb g on a.flowtemplateid=g.flowtemplateid and b.taskid=g.taskid "
 	sql = sql + "  inner join cmn_modual_tb e on d.modualid=e.modualid where  a.flowstatus='0' "
+	sql = ConvertSQL(sql, Getdbtype())
+	_, err = o.Raw(sql, u.Caller).QueryRows(&admins)
+	Getlog().Debug(sql)
 
-	_, err = o.Raw(ConvertSQL(sql, Getdbtype()), u.Caller).QueryRows(&admins)
-
+	if err != nil {
+		Getlog().Error(err.Error())
+	}
 	return admins, err
 }
 
@@ -1606,7 +1610,9 @@ func Gettodotasklist(u FITASK) (admins []TODOTASKLIST, err error) {
 	sql = sql + "  where a.fiid=? and a.flowstatus='0' and b.taskstatus='0' "
 
 	_, err = o.Raw(ConvertSQL(sql, Getdbtype()), u.Fiid).QueryRows(&admins)
-
+	if err != nil {
+		Getlog().Error(err.Error())
+	}
 	return admins, err
 }
 
@@ -1642,6 +1648,9 @@ func Getdonetask(u FIFLOW) (admins []TODOTASKLIST, err error) {
 		sql = sql + " and a.flowstatus = '" + u.Flowstatus + "' "
 	}
 	_, err = o.Raw(ConvertSQL(sql, Getdbtype())).QueryRows(&admins)
+	if err != nil {
+		Getlog().Error(err.Error())
+	}
 
 	return admins, err
 }
@@ -1660,7 +1669,9 @@ func Getdonetasklist(u FITASK) (admins []TODOTASKLIST, err error) {
 	sql = sql + "  inner join cmn_modual_tb e on d.modualid=e.modualid where 1=1 and a.fiid=? order by b.tiid"
 
 	_, err = o.Raw(ConvertSQL(sql, Getdbtype()), u.Fiid).QueryRows(&admins)
-
+	if err != nil {
+		Getlog().Error(err.Error())
+	}
 	return admins, err
 }
 
@@ -1819,9 +1830,10 @@ func Cancelflow(u FIFLOW) (err error) {
 	var tablename, flowinstidcol, flowstatuscol string
 
 	sql = "SELECT a.tablename,b.flowinstidcol,b.flowstatuscol FROM cmn_modualtemplate_tb a "
-	sql = sql + " inner join  fi_template_tb b on a.flowtemplateid=b.flowtemplateid where a.flowtemplateid=? and a.modualid=? "
+	sql = sql + " inner join  fi_template_tb b on a.flowtemplateid=b.flowtemplateid "
+	sql = sql + "  inner join fi_flow c on a.modualid=c.modualid where a.flowtemplateid=? and c.fiid=? "
 
-	err = o.Raw(ConvertSQL(sql, Getdbtype()), u.Flowtemplateid, u.Modualid).QueryRow(&tablename, &flowinstidcol, &flowstatuscol)
+	err = o.Raw(ConvertSQL(sql, Getdbtype()), u.Flowtemplateid, u.Fiid).QueryRow(&tablename, &flowinstidcol, &flowstatuscol)
 
 	sql = "update " + tablename + " set " + flowstatuscol + "='4' where " + flowinstidcol + " =?"
 	_, err = o.Raw(ConvertSQL(sql, dbtype), u.Fiid).Exec()
