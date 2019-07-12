@@ -18,7 +18,7 @@ type CMN_MODUAL_TB struct {
 	Parentid   string `orm:"column(parentid)"`
 	Url        string `orm:"column(url);null"`
 	Remark     string `orm:"column(remark);null"`
-	Displayno  int64  `orm:"column(displayno);1"`
+	Displayno  int64  `orm:"column(displayno);default(1)"`
 }
 type CMN_MODUALTEMPLATE_TB struct {
 	Modualid       string `orm:"pk;column(modualid)"`

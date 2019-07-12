@@ -5,6 +5,8 @@ import (
 	_ "errors"
 	"fmt"
 	"html/template"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,7 +19,17 @@ import (
 	"io/ioutil"
 	"reflect"
 
+	"github.com/tealeg/xlsx"
+
+	"log"
+
+	"encoding/json"
+
+	"bytes"
+
+	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	_ "github.com/tidwall/gjson"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
 )
@@ -26,6 +38,12 @@ import (
 //Remark         string `orm:"size(5000)"`
 //Created         time.Time `orm:"index"`
 //流程定义fi_template_tb表
+const (
+	formatTime     = "15:04:05"
+	formatDate     = "2006-01-02"
+	formatDateTime = "2006-01-02 15:04:05"
+)
+
 type COMPONENT struct {
 	Componentname  string
 	Parentid       string
@@ -1126,4 +1144,431 @@ func GetMinuteDiffer(start_time, end_time string) int64 {
 		return hour
 	}
 
+}
+func Getfieldtype(value interface{}) (fieldtype string) {
+
+	if value == nil {
+		fieldtype = "varchar"
+	} else {
+		val := reflect.ValueOf(value)
+
+		reflectfieldtype := val.Kind()
+		switch reflectfieldtype {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			fieldtype = "int"
+			break
+		case reflect.Float32, reflect.Float64:
+			fieldtype = "float"
+			break
+		case reflect.Bool:
+			fieldtype = "boolean"
+			break
+		case reflect.String:
+			fieldtype = "varchar"
+			break
+		case reflect.Array:
+			fieldtype = "Array"
+			break
+		case reflect.Slice:
+			fieldtype = "Array"
+			break
+		case reflect.Map:
+			fieldtype = "map"
+			break
+		default:
+			fieldtype = "varchar"
+			break
+		}
+	}
+	//fmt.Println("Getfieldtype==>" + fieldtype)
+	return
+}
+
+//a,b,c ==>'a','b','c'
+func Convertstring2instring(commastring string) string {
+	result := ""
+	arr := strings.Split(commastring, ",")
+	for idx, ar := range arr {
+		if ar == "" {
+			continue
+		}
+		result = result + "'" + ar + "'"
+		if idx < len(arr)-1 {
+			result = result + ","
+		}
+
+	}
+	return result
+}
+
+//生成excel文件
+func WriteExcelfile(excelfilename string, colnames []string, datamaparr []map[string]interface{}) error {
+	var file *xlsx.File
+	var sheet *xlsx.Sheet
+	var row *xlsx.Row
+	var cell *xlsx.Cell
+	var err error
+	filepath := GetCurrentDirectory() + "/static/files/"
+	filename := filepath + excelfilename + ".xlsx"
+	_, err = os.Stat(filename)
+	if err == nil {
+		err = os.Remove(filename)
+		if err != nil {
+			fmt.Printf(err.Error())
+			return err
+		}
+	}
+	file = xlsx.NewFile()
+	sheet, err = file.AddSheet("Sheet1")
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	row = sheet.AddRow()
+	for _, colname := range colnames {
+		cell = row.AddCell()
+		cell.Value = colname
+	}
+	for _, data := range datamaparr {
+		row = sheet.AddRow()
+		for _, colname := range colnames {
+			cell = row.AddCell()
+			Setcellvalue(cell, data[colname])
+		}
+
+	}
+
+	err = file.Save(filename)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	return nil
+}
+
+//生成excel文件,同时带一行数据
+func WriteExcelfileanddata(excelfilename string, colnames []string, datamaparr []map[string]interface{}, rowcolnames []string, rowdatamaparr []orm.Params) error {
+	var file *xlsx.File
+	var sheet *xlsx.Sheet
+	var row *xlsx.Row
+	var cell *xlsx.Cell
+	var err error
+	filepath := GetCurrentDirectory() + "/static/files/"
+	filename := filepath + excelfilename + ".xlsx"
+	_, err = os.Stat(filename)
+	if err == nil {
+		err = os.Remove(filename)
+		if err != nil {
+			fmt.Printf(err.Error())
+			return err
+		}
+	}
+	file = xlsx.NewFile()
+	sheet, err = file.AddSheet("Sheet1")
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	row = sheet.AddRow()
+	for _, colname := range colnames {
+		cell = row.AddCell()
+		cell.Value = colname
+	}
+	for _, data := range datamaparr {
+
+		row = sheet.AddRow()
+		for _, colname := range colnames {
+			cell = row.AddCell()
+			Setcellvalue(cell, data[colname])
+		}
+
+	}
+	sheet, err = file.AddSheet("Sheet2")
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	row = sheet.AddRow()
+	for _, colname := range rowcolnames {
+		cell = row.AddCell()
+		cell.Value = colname
+	}
+	for _, data := range rowdatamaparr {
+		row = sheet.AddRow()
+		for _, colname := range rowcolnames {
+			cell = row.AddCell()
+			//fmt.Println(colname)
+			Setcellvalue(cell, data[colname])
+		}
+
+	}
+
+	err = file.Save(filename)
+	if err != nil {
+		fmt.Printf(err.Error())
+		return err
+	}
+	return nil
+
+}
+
+//获得当前执行程序所在的路径
+func GetCurrentDirectory() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Replace(dir, "\\", "/", -1)
+}
+
+//struct转换为map
+func Struct2Map(obj interface{}) map[string]interface{} {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+
+	var data = make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		data[t.Field(i).Name] = v.Field(i).Interface()
+	}
+	return data
+}
+
+//获得struct的所有属性
+func GetStructFieldnames(structobj interface{}) []string {
+	structfilednames := make([]string, 0)
+	t := reflect.TypeOf(structobj)
+	for i := 0; i < t.NumField(); i++ {
+		structfilednames = append(structfilednames, t.Field(i).Name)
+	}
+	return structfilednames
+}
+func Convertinterface2value(arg interface{}) interface{} {
+	if arg == nil {
+		return ""
+	}
+	val := reflect.ValueOf(arg)
+	kind := val.Kind()
+	switch kind {
+	case reflect.String:
+		v := val.String()
+		arg = v
+		break
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		arg = val.Int()
+		break
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		arg = val.Uint()
+		break
+	case reflect.Float32:
+		arg, _ = orm.StrTo(orm.ToStr(arg)).Float64()
+		break
+	case reflect.Float64:
+		arg = val.Float()
+		break
+	case reflect.Bool:
+		arg = val.Bool()
+		break
+	case reflect.Array:
+		var content []byte
+		var err error
+		err = json.Unmarshal(content, arg)
+		if err != nil {
+			beego.Error(err)
+		}
+		arg = StringsToJSON(string(content))
+		break
+	case reflect.Slice:
+		var content []byte
+		var err error
+		err = json.Unmarshal(content, arg)
+		if err != nil {
+			beego.Error(err)
+		}
+		arg = StringsToJSON(string(content))
+		break
+	default:
+		v := val.String()
+		arg = v
+		break
+	}
+	return arg
+}
+func ConvertInterface2valueByfieldtype(fieldtype string, arg interface{}) interface{} {
+	//Getlog().Debug("ConvertInterface2valueByfieldtype()==>" + fieldtype + "==>" + orm.ToStr(arg))
+	if arg == nil {
+		switch fieldtype {
+		case "date", "datetime", "time", "timestamp", "year":
+			return nil
+		case "int", "smallint", "int64", "bigint", "long", "real", "decimal", "double", "float", "money", "number", "smallmoney", "numeric":
+			return nil
+		default:
+			return ""
+		}
+	}
+	val := reflect.ValueOf(arg)
+	kind := val.Kind()
+	switch fieldtype {
+	case "varchar", "char", "text", "longtext", "tinytext":
+		//ObjectIdHex("
+		Getlog().Debug("ConvertInterface2valueByfieldtype==>" + orm.ToStr(arg))
+		Getlog().Debug("kind==>" + orm.ToStr(kind))
+		if kind == reflect.Slice {
+			textfld := ""
+			argarr := arg.([]interface{})
+			for idx, arg1 := range argarr {
+				textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+				if idx < len(argarr)-1 {
+					textfld = textfld + ","
+				}
+			}
+			return textfld
+
+		} else {
+			textfld := orm.ToStr(arg)
+			if strings.Contains(textfld, "ObjectIdHex") {
+				textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+				textfld = strings.Replace(textfld, "\")", "", -1)
+			}
+			return textfld
+		}
+
+	case "int", "smallint":
+		arg, _ = orm.StrTo(orm.ToStr(arg)).Int()
+		return arg
+	case "int64", "bigint", "long":
+		arg, _ = orm.StrTo(orm.ToStr(arg)).Int64()
+		return arg
+	case "real", "decimal", "double", "float", "money", "number", "smallmoney", "numeric":
+		arg, _ = orm.StrTo(orm.ToStr(arg)).Float64()
+		return arg
+	case "tinyint":
+		arg, _ = orm.StrTo(orm.ToStr(arg)).Bool()
+		return arg
+	case "date", "datetime", "time", "timestamp", "year":
+		//fmt.Println("orm.ToStr(arg)==>" + orm.ToStr(arg))
+		//fmt.Println("orm.ToStr(val)==>" + orm.ToStr(val))
+		v := orm.ToStr(val)
+		//return arg.(time.Time)
+		//return Convert2time(orm.ToStr(arg))
+		v = strings.Replace(v, "/", "-", -1)
+		v = strings.Replace(v, "T", " ", -1)
+		v = strings.Replace(v, "Z", "", -1)
+		//fmt.Println(v)
+		//fmt.Println(len(v))
+		var t time.Time
+		var err error
+		if len(v) >= 19 {
+			s := v[:19]
+			t, err = time.ParseInLocation(formatDateTime, s, time.Local)
+		} else if len(v) >= 10 {
+			s := v
+			if len(v) > 10 {
+				s = v[:10]
+			}
+			t, err = time.ParseInLocation(formatDate, s, time.Local)
+		} else {
+			s := v
+			if len(s) > 8 {
+				s = v[:8]
+			}
+			t, err = time.ParseInLocation(formatTime, s, time.Local)
+		}
+		if err == nil {
+			if fieldtype == "date" || fieldtype == "year" {
+				v = t.In(time.Local).Format(formatDate)
+			} else if fieldtype == "datetime" {
+				v = t.In(time.Local).Format(formatDateTime)
+			} else {
+				v = t.In(time.Local).Format(formatTime)
+			}
+			return v
+		} else {
+			fmt.Println(err)
+			Getlog().Error(err.Error())
+			return ""
+		}
+	default:
+		return val.String()
+	}
+	return ""
+}
+
+//write excel file cell value
+func Setcellvalue(cell *xlsx.Cell, data interface{}) {
+	//fmt.Println(data)
+	if data == nil {
+		cell.Value = ""
+		return
+	}
+	val := reflect.ValueOf(data)
+	kind := val.Kind()
+	//fmt.Println(kind)
+	//fmt.Println(val)
+	switch kind {
+	case reflect.String:
+		//v := val.String()
+		//cell.Value = v
+		cell.SetValue(val)
+
+		break
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v := val.Int()
+		cell.SetInt64(v)
+		break
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v := val.Uint()
+		cell.SetValue(v)
+
+		break
+	case reflect.Float32:
+		v, _ := orm.StrTo(orm.ToStr(val)).Float64()
+		cell.SetFloat(v)
+		break
+	case reflect.Float64:
+		v := val.Float()
+		cell.SetFloat(v)
+		break
+	case reflect.Bool:
+		v := val.Bool()
+		cell.SetBool(v)
+		break
+	case reflect.Array:
+		// var content []byte
+		// var err error
+		// err = json.Unmarshal(content, data)
+		// if err != nil {
+		// 	beego.Error(err)
+		// }
+		// cell.Value = StringsToJSON(string(content))
+		cell.SetValue(data)
+		break
+	case reflect.Slice:
+		// var content []byte
+		// var err error
+		// err = json.Unmarshal(content, data)
+		// if err != nil {
+		// 	beego.Error(err)
+		// }
+		// cell.Value = StringsToJSON(string(content))
+		cell.SetValue(data)
+		break
+	default:
+		cell.SetValue(data)
+		break
+	}
+}
+
+//转换json字节为string
+func StringsToJSON(str string) string {
+	var jsons bytes.Buffer
+	for _, r := range str {
+		rint := int(r)
+		if rint < 128 {
+			jsons.WriteRune(r)
+		} else {
+			jsons.WriteString("\\u")
+			jsons.WriteString(strconv.FormatInt(int64(rint), 16))
+		}
+	}
+	return jsons.String()
 }

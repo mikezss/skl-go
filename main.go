@@ -95,7 +95,7 @@ func registerDB() string {
 		ds = append(ds, iniconf.String(dbtype+"::password")+"@tcp(")
 		ds = append(ds, iniconf.String(dbtype+"::hostname")+":")
 		ds = append(ds, iniconf.String(dbtype+"::port")+")/")
-		ds = append(ds, iniconf.String(dbtype+"::dbname")+"?charset=utf8")
+		ds = append(ds, iniconf.String(dbtype+"::dbname")+"?charset=utf8&loc=Asia%2FShanghai&parseTime=true")
 
 		datasourcename = strings.Join(ds, "")
 		fmt.Println(datasourcename)
@@ -179,4 +179,8 @@ func initTable(dbtype string) {
 		}
 	}
 	//o.Commit()
+}
+func startWebsocketServer() {
+	ws := models.NewWebsocketServer()
+	go ws.Run()
 }

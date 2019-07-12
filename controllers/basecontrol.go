@@ -81,3 +81,15 @@ func stringsToJson(str string) string {
 	}
 	return jsons
 }
+func (ctl *BASEController) Outputresult(err error) {
+	if err != nil {
+
+		ctl.Data["json"] = map[string]string{"status": "false", "result": err.Error()}
+		ctl.ServeJSON()
+
+	} else {
+
+		ctl.Data["json"] = map[string]string{"status": "ok"}
+		ctl.ServeJSON()
+	}
+}
