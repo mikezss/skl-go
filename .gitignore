@@ -12,3 +12,4 @@ main.exe
 *.exe
 Dockerfile
 build.sh
+*.log
