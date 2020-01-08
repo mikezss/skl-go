@@ -27,8 +27,14 @@ import (
 
 	"bytes"
 
+	"math/rand"
+
+	"crypto/sha256"
+	"encoding/hex"
+
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/mozillazg/go-pinyin"
 	_ "github.com/tidwall/gjson"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
@@ -42,6 +48,12 @@ const (
 	formatTime     = "15:04:05"
 	formatDate     = "2006-01-02"
 	formatDateTime = "2006-01-02 15:04:05"
+)
+const (
+	KC_RAND_KIND_NUM   = 0 // 纯数字
+	KC_RAND_KIND_LOWER = 1 // 小写字母
+	KC_RAND_KIND_UPPER = 2 // 大写字母
+	KC_RAND_KIND_ALL   = 3 // 数字、大小写字母
 )
 
 type COMPONENT struct {
@@ -662,11 +674,25 @@ func Convert2time(input string) time.Time {
 	if input == "" {
 		input = "9999-01-01"
 	}
-	cvtvalue, err = time.Parse("2006-01-02", input)
-	if err != nil {
-		fmt.Println(err)
-		cvtvalue = time.Now()
-		cvtvalue.Format("2006-01-02")
+	if len(input) == 10 {
+
+		cvtvalue, err = time.Parse("2006-01-02", input)
+		if err != nil {
+			fmt.Println(err)
+			cvtvalue = time.Now()
+			cvtvalue.Format("2006-01-02")
+		}
+
+	}
+	if len(input) >= 19 {
+		input = input[:19]
+		cvtvalue, err = time.Parse("2006-01-02 15:04:05", input)
+		if err != nil {
+			fmt.Println(err)
+			cvtvalue = time.Now()
+			cvtvalue.Format("2006-01-02 15:04:05")
+		}
+
 	}
 
 	return cvtvalue
@@ -1571,4 +1597,136 @@ func StringsToJSON(str string) string {
 		}
 	}
 	return jsons.String()
+}
+//获得指定长度的随机数字符串
+//size :指定长度
+//kind:数字/大小写字母/
+//KC_RAND_KIND_NUM   = 0 // 纯数字
+//KC_RAND_KIND_LOWER = 1 // 小写字母
+//KC_RAND_KIND_UPPER = 2 // 大写字母
+//KC_RAND_KIND_ALL   = 3 // 数字、大小写字母
+func GetRandomStr(size int, kind int) string {
+	ikind, kinds, result := kind, [][]int{[]int{10, 48}, []int{26, 97}, []int{26, 65}}, make([]byte, size)
+	is_all := kind > 2 || kind < 0
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < size; i++ {
+		if is_all { // random ikind
+			ikind = rand.Intn(3)
+		}
+		scope, base := kinds[ikind][0], kinds[ikind][1]
+		result[i] = uint8(base + rand.Intn(scope))
+	}
+	return string(result)
+}
+func CrypPWDtoSHA256(password string) (str, salt string) {
+	salt = GetRandomStr(20, 3)
+	//fmt.Println("random string:" + salt)
+	sha := sha256.New()
+	sha.Write([]byte(salt + password))
+
+	str = hex.EncodeToString(sha.Sum(nil))
+	//fmt.Println("sha256 password:" + str)
+	return str, salt
+}
+
+//9ec9750e709431dad22365cabc5c625482e574c74adaebba7dd02f1129e4ce1d
+//YzcmCZNvbXocrsz9dm8e
+func VerifySHA256PWD(password string, salt string) string {
+	sha := sha256.New()
+
+	sha.Write([]byte(salt + password))
+	str := hex.EncodeToString(sha.Sum(nil))
+	fmt.Println("verify sha256 password:" + str)
+
+	return str
+}
+
+//转换汉字为拼音
+//张三===>[zhang san]
+func ConvertChinese2Pinyin(chinese string, tone string) []string {
+	pinyinarr := make([]string, 0)
+	a := pinyin.NewArgs()
+	switch tone {
+	case "tone": //包含声调zhōng guó
+		a.Style = pinyin.Tone
+		twoarr := pinyin.Pinyin(chinese, a)
+		pinyinarr = twoarr[0]
+	case "tonenumber": //zhong1 guo2
+		a.Style = pinyin.Tone3
+		twoarr := pinyin.Pinyin(chinese, a)
+		pinyinarr = twoarr[0]
+	case "mutitone":
+		a.Heteronym = true
+		a.Style = pinyin.Tone3
+		twoarr := pinyin.Pinyin(chinese, a)
+		pinyinarr = twoarr[0]
+	default: //zhong guo
+		pinyinarr = pinyin.LazyPinyin(chinese, a)
+
+	}
+	fmt.Println(pinyinarr)
+	return pinyinarr
+}
+//张三==>三
+//张先生==>先生
+//欧阳奋强==>奋强
+func GetFirstnamecn(usernamecn string) string {
+	firstnamecn := ""
+	nameRune := []rune(usernamecn)
+	runelen := len(nameRune)
+	switch runelen {
+	case 2:
+		firstnamecn = string(nameRune[1])
+		break
+	case 3:
+		firstnamecn = string(nameRune[1:3])
+		break
+	case 4:
+		firstnamecn = string(nameRune[2:4])
+		break
+	case 5:
+		firstnamecn = string(nameRune[2:5])
+		break
+	default:
+		firstnamecn = string(nameRune[1])
+		break
+	}
+	return firstnamecn
+
+}
+//张三==>三
+//张先生==>先生
+//欧阳奋强==>奋强
+func GetLastnamecn(usernamecn string) string {
+	lastnamecn := ""
+	nameRune := []rune(usernamecn)
+	runelen := len(nameRune)
+	switch runelen {
+	case 2:
+		lastnamecn = string(nameRune[0])
+		break
+	case 3:
+		lastnamecn = string(nameRune[0])
+		break
+	case 4:
+		lastnamecn = string(nameRune[0:1])
+		break
+	case 5:
+		lastnamecn = string(nameRune[0:1])
+		break
+	default:
+		lastnamecn = string(nameRune[0])
+		break
+	}
+	return lastnamecn
+
+}
+func IstotalDigital(digitalstr string) bool {
+	pattern := "^\\d+$" 
+	//Tregisteorg start
+	isdigital, err := regexp.MatchString(pattern, digitalstr)
+	if err != nil {
+		return false
+	}
+	return isdigital
 }

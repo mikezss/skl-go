@@ -3,10 +3,11 @@ package models
 import (
 	"database/sql"
 
-	_ "errors"
+	"errors"
 	"fmt"
 	_ "math"
-	_ "reflect"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -943,7 +944,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 				primarykeysarr := strings.Split(fdsti.Sourcetableprimarykeys, ",")
 				//Getlog().Debug("fdsti.Targettablefieldtype==>" + orm.ToStr(fdsti.Targettablefieldtype))
 				for _, pkfld := range primarykeysarr {
-					paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[pkfld], sdm[pkfld])
+					paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[pkfld], sdm[pkfld])
 					selectcountparams = append(selectcountparams, paramvalue)
 				}
 
@@ -973,13 +974,13 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 					//Getlog().Debug("sourceprimarykeyfield==>" + sourceprimarykeyfield)
 					ffnarr := strings.Split(sourceprimarykeyfield, ".")
 					if ffnarr[1] == "" || ffnarr[1] == "no" {
-						paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetprimarykeysar], sdm[ffnarr[0]])
+						paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetprimarykeysar], sdm[ffnarr[0]])
 						selectcountparams = append(selectcountparams, paramvalue)
 					} else { //comm_user.user_id<==user.activity.userName
 						//Getlog().Debug("sdm[ffnarr[0]]==>" + orm.ToStr(sdm[ffnarr[0]]))
 						childvaluemap := sdm[ffnarr[0]].(map[string]interface{})
 						//Getlog().Debug("childvaluemap==>" + orm.ToStr(childvaluemap))
-						paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetprimarykeysar], childvaluemap[ffnarr[1]])
+						paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetprimarykeysar], childvaluemap[ffnarr[1]])
 						selectcountparams = append(selectcountparams, paramvalue)
 
 					}
@@ -1007,7 +1008,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 			if ncount < 1 { //无则插入
 				inserttargetparams := make([]interface{}, 0)
 				for idx, ffn := range ffnarr {
-					paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffn])
+					paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffn])
 					inserttargetparams = append(inserttargetparams, paramvalue)
 				}
 				_, err := o.Raw(fdsti.InsertTargetSql, inserttargetparams...).Exec()
@@ -1026,12 +1027,12 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 			} else { //有则更新
 				updatetargetparams := make([]interface{}, 0)
 				for idx, ffn := range ffnarr {
-					paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffn])
+					paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffn])
 					updatetargetparams = append(updatetargetparams, paramvalue)
 				}
 				primarykeysarr := strings.Split(fdsti.Sourcetableprimarykeys, ",")
 				for _, pkfld := range primarykeysarr {
-					paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[pkfld], sdm[pkfld])
+					paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[pkfld], sdm[pkfld])
 					updatetargetparams = append(updatetargetparams, paramvalue)
 				}
 				_, err := o.Raw(fdsti.UpdateTargetSql, updatetargetparams...).Exec()
@@ -1058,7 +1059,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 					//lenghffnarr := len(ffnarr)
 					//Getlog().Debug("len(ffnarr)==>" + orm.ToStr(lenghffnarr))
 					if ffnarr[1] == "" || ffnarr[1] == "no" {
-						paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffnarr[0]])
+						paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffnarr[0]])
 						inserttargetparams = append(inserttargetparams, paramvalue)
 					} else { //email<==activity.email
 						//Getlog().Debug("sdm[ffnarr[lenghffnarr-2]]==>" + orm.ToStr(sdm[ffnarr[lenghffnarr-2]]))
@@ -1066,7 +1067,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 						mongovalue := loopmongomap(sdm, ffnarr)
 						if mongovalue != nil {
 							//childvaluemap := sdm[ffnarr[lenghffnarr-2]].(map[string]interface{})
-							paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], mongovalue)
+							paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], mongovalue)
 							inserttargetparams = append(inserttargetparams, paramvalue)
 						} else {
 							switch fdsti.Targettablefieldtype[targetfieldnamesarr[idx]] {
@@ -1123,7 +1124,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 				for idx, ffn := range fromfieldandchildnamesarr {
 					ffnarr := strings.Split(ffn, ".")
 					if ffnarr[1] == "" || ffnarr[1] == "no" {
-						paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffnarr[0]])
+						paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], sdm[ffnarr[0]])
 						updatetargetparams = append(updatetargetparams, paramvalue)
 					} else { //email<==activity.email
 						//childvaluemap := sdm[ffnarr[0]].(map[string]interface{})
@@ -1132,7 +1133,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 						mongovalue := loopmongomap(sdm, ffnarr)
 						if mongovalue != nil {
 							//childvaluemap := sdm[ffnarr[lenghffnarr-2]].(map[string]interface{})
-							paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], mongovalue)
+							paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetfieldnamesarr[idx]], mongovalue)
 							updatetargetparams = append(updatetargetparams, paramvalue)
 						} else {
 							switch fdsti.Targettablefieldtype[targetfieldnamesarr[idx]] {
@@ -1155,7 +1156,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 					sourceprimarykeyfield := fromfieldandchildnamesarr[targetprimarykeyindex]
 					ffnarr := strings.Split(sourceprimarykeyfield, ".")
 					if ffnarr[1] == "" || ffnarr[1] == "no" {
-						paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetprimarykeysar], sdm[ffnarr[0]])
+						paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetprimarykeysar], sdm[ffnarr[0]])
 						updatetargetparams = append(updatetargetparams, paramvalue)
 					} else { //comm_user.user_id<==user.activity.userName
 						//childvaluemap := sdm[ffnarr[0]].(map[string]interface{})
@@ -1164,7 +1165,7 @@ func dividsyndatatotarget(onlyinsert string, datasource DATASOURCE, fromdatasour
 						mongovalue := loopmongomap(sdm, ffnarr)
 						if mongovalue != nil {
 							//childvaluemap := sdm[ffnarr[lenghffnarr-2]].(map[string]interface{})
-							paramvalue := ConvertInterface2valueByfieldtype(fdsti.Targettablefieldtype[targetprimarykeysar], mongovalue)
+							paramvalue := ConvertInterface2valueByfieldtype(fromdatasource.Dbtype, fdsti.Targettablefieldtype[targetprimarykeysar], mongovalue)
 							updatetargetparams = append(updatetargetparams, paramvalue)
 						} else {
 							switch fdsti.Targettablefieldtype[targetprimarykeysar] {
@@ -1685,6 +1686,9 @@ func Syncatalog1table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 		Getlog().Error("Getcollectiondataforregion==>" + err.Error())
 		return err
 	}
+	if len(data) < 1 {
+		return errors.New(fromtable + " has no data for one level")
+	}
 	data0 := data[0]
 	fromfieldnamearr := strings.Split(fromfieldname, ",")
 	fromfieldnamearr2 := strings.Split(fromfieldnamearr[0], ".")
@@ -1744,7 +1748,66 @@ func Syncatalog1table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 		insertparams := make([]interface{}, 0)
 		for _, fromfieldname1 := range fromfieldnamearr {
 			fromfieldnamearr2 := strings.Split(fromfieldname1, ".")
-			insertparams = append(insertparams, orm.ToStr(regionmap[fromfieldnamearr2[1]]))
+			textfld := ""
+			arg := regionmap[fromfieldnamearr2[1]]
+			val := reflect.ValueOf(arg)
+			kind := val.Kind()
+			if kind == reflect.Slice {
+
+				argarr := arg.([]interface{})
+				for idx, arg1 := range argarr {
+					textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+					if idx < len(argarr)-1 {
+						textfld = textfld + ","
+					}
+				}
+
+			} else {
+				textfld = orm.ToStr(arg)
+				if strings.Contains(textfld, "ObjectIdHex") {
+					textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+					textfld = strings.Replace(textfld, "\")", "", -1)
+				} else {
+					if len(textfld) >= 8 {
+						if len(textfld) == 8 { //2019-1-1 2019/1/1
+							ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+							if err == nil {
+								if ismatch {
+									textfld = strings.ReplaceAll(textfld, "/", "-")
+									textfldarr := strings.Split(textfld, "-")
+									textfld = textfldarr[0]
+									if len(textfldarr[1]) == 2 {
+										textfld = textfld + textfldarr[1]
+									} else {
+										textfld = textfld + "0" + textfldarr[1]
+									}
+									if len(textfldarr[2]) == 2 {
+										textfld = textfld + textfldarr[2]
+									} else {
+										textfld = textfld + "0" + textfldarr[2]
+									}
+									newt := Convert2time(textfld)
+									hh, _ := time.ParseDuration("8h")
+									textfld = orm.ToStr(newt.Add(hh))
+								}
+							}
+						} else { //2019-01-01 2019/01/01
+							ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+							if err == nil {
+								if ismatch {
+									textfld = strings.ReplaceAll(textfld, "/", "-")
+									newt := Convert2time(textfld)
+									hh, _ := time.ParseDuration("8h")
+									textfld = orm.ToStr(newt.Add(hh))
+								}
+							}
+
+						}
+					}
+				}
+
+			}
+			insertparams = append(insertparams, textfld)
 		}
 		_, err = o.Raw(insertsql, insertparams...).Exec()
 		if err != nil {
@@ -1781,6 +1844,9 @@ func Syncatalog2table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 	if err != nil {
 		Getlog().Error("Getcollectiondataforregion==>" + err.Error())
 		return err
+	}
+	if len(data) < 1 {
+		return errors.New(fromtable + " has no data for two level")
 	}
 	data0 := data[0]
 	fromfieldnamearr := strings.Split(fromfieldname, ",")
@@ -1839,6 +1905,10 @@ func Syncatalog2table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 	for _, region := range regionarr {
 		regionmap := region.(map[string]interface{})
 		parent := orm.ToStr(regionmap[fromfieldnamearr2[1]])
+		if strings.Contains(parent, "ObjectIdHex") {
+			parent = strings.Replace(parent, "ObjectIdHex(\"", "", -1)
+			parent = strings.Replace(parent, "\")", "", -1)
+		}
 		provincearr := regionmap[fromfieldnamearr3[1]].([]interface{})
 		for _, province := range provincearr {
 			provincemap := province.(map[string]interface{})
@@ -1847,7 +1917,66 @@ func Syncatalog2table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 			for idx, fromfieldname1 := range fromfieldnamearr {
 				if idx != 0 {
 					fromfieldnamearr2 := strings.Split(fromfieldname1, ".")
-					insertparams = append(insertparams, orm.ToStr(provincemap[fromfieldnamearr2[len(fromfieldnamearr2)-1]]))
+					textfld := ""
+					arg := provincemap[fromfieldnamearr2[len(fromfieldnamearr2)-1]]
+					val := reflect.ValueOf(arg)
+					kind := val.Kind()
+					if kind == reflect.Slice {
+
+						argarr := arg.([]interface{})
+						for idx, arg1 := range argarr {
+							textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+							if idx < len(argarr)-1 {
+								textfld = textfld + ","
+							}
+						}
+
+					} else {
+						textfld = orm.ToStr(arg)
+						if strings.Contains(textfld, "ObjectIdHex") {
+							textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+							textfld = strings.Replace(textfld, "\")", "", -1)
+						} else {
+							if len(textfld) >= 8 {
+								if len(textfld) == 8 { //2019-1-1 2019/1/1
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											textfldarr := strings.Split(textfld, "-")
+											textfld = textfldarr[0]
+											if len(textfldarr[1]) == 2 {
+												textfld = textfld + textfldarr[1]
+											} else {
+												textfld = textfld + "0" + textfldarr[1]
+											}
+											if len(textfldarr[2]) == 2 {
+												textfld = textfld + textfldarr[2]
+											} else {
+												textfld = textfld + "0" + textfldarr[2]
+											}
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+								} else { //2019-01-01 2019/01/01
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+
+								}
+							}
+						}
+
+					}
+					insertparams = append(insertparams, textfld)
 				}
 			}
 			_, err = o.Raw(insertsql, insertparams...).Exec()
@@ -1887,6 +2016,9 @@ func Syncatalog3table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 	if err != nil {
 		Getlog().Error("Getcollectiondataforregion==>" + err.Error())
 		return err
+	}
+	if len(data) < 1 {
+		return errors.New(fromtable + " has no data for three level")
 	}
 	data0 := data[0]
 	fromfieldnamearr := strings.Split(fromfieldname, ",")
@@ -1951,7 +2083,10 @@ func Syncatalog3table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 		for _, province := range provincearr {
 			provincemap := province.(map[string]interface{})
 			parent := orm.ToStr(provincemap[fromfieldnamearr2[2]])
-
+			if strings.Contains(parent, "ObjectIdHex") {
+				parent = strings.Replace(parent, "ObjectIdHex(\"", "", -1)
+				parent = strings.Replace(parent, "\")", "", -1)
+			}
 			cityarr := provincemap[fromfieldnamearr3[2]].([]interface{})
 			for _, city := range cityarr {
 				citymap := city.(map[string]interface{})
@@ -1960,7 +2095,66 @@ func Syncatalog3table(fromdatasource, fromtable, fromfieldname, fromkey, datasou
 				for idx, fromfieldname1 := range fromfieldnamearr {
 					if idx != 0 {
 						fromfieldnamearr2 := strings.Split(fromfieldname1, ".")
-						insertparams = append(insertparams, orm.ToStr(citymap[fromfieldnamearr2[len(fromfieldnamearr2)-1]]))
+						textfld := ""
+						arg := citymap[fromfieldnamearr2[len(fromfieldnamearr2)-1]]
+						val := reflect.ValueOf(arg)
+						kind := val.Kind()
+						if kind == reflect.Slice {
+
+							argarr := arg.([]interface{})
+							for idx, arg1 := range argarr {
+								textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+								if idx < len(argarr)-1 {
+									textfld = textfld + ","
+								}
+							}
+
+						} else {
+							textfld = orm.ToStr(arg)
+							if strings.Contains(textfld, "ObjectIdHex") {
+								textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+								textfld = strings.Replace(textfld, "\")", "", -1)
+							} else {
+								if len(textfld) >= 8 {
+									if len(textfld) == 8 { //2019-1-1 2019/1/1
+										ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+										if err == nil {
+											if ismatch {
+												textfld = strings.ReplaceAll(textfld, "/", "-")
+												textfldarr := strings.Split(textfld, "-")
+												textfld = textfldarr[0]
+												if len(textfldarr[1]) == 2 {
+													textfld = textfld + textfldarr[1]
+												} else {
+													textfld = textfld + "0" + textfldarr[1]
+												}
+												if len(textfldarr[2]) == 2 {
+													textfld = textfld + textfldarr[2]
+												} else {
+													textfld = textfld + "0" + textfldarr[2]
+												}
+												newt := Convert2time(textfld)
+												hh, _ := time.ParseDuration("8h")
+												textfld = orm.ToStr(newt.Add(hh))
+											}
+										}
+									} else { //2019-01-01 2019/01/01
+										ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+										if err == nil {
+											if ismatch {
+												textfld = strings.ReplaceAll(textfld, "/", "-")
+												newt := Convert2time(textfld)
+												hh, _ := time.ParseDuration("8h")
+												textfld = orm.ToStr(newt.Add(hh))
+											}
+										}
+
+									}
+								}
+							}
+
+						}
+						insertparams = append(insertparams, textfld)
 					}
 				}
 				_, err = o.Raw(insertsql, insertparams...).Exec()
@@ -2012,6 +2206,10 @@ func Synparentchildtable(fromdatasource, fromtable, fromfieldname, fromkey, data
 			Getlog().Error("Getcollectiondataforparentchild==>" + err.Error())
 			return err
 		}
+	}
+
+	if len(data) < 1 {
+		return errors.New(fromtable + " has no data for parentchild")
 	}
 
 	ds, err := GetDATASOURCEBYID(DATASOURCE{Datasource: datasource})
@@ -2093,7 +2291,327 @@ func Synparentchildtable(fromdatasource, fromtable, fromfieldname, fromkey, data
 			childmap := child.(map[string]interface{})
 			for _, childfromfieldname := range childfromfieldnamearr {
 				childfromfieldnamearr1 := strings.Split(childfromfieldname, ".")
-				insertparams = append(insertparams, orm.ToStr(childmap[childfromfieldnamearr1[1]]))
+				textfld := ""
+				arg := childmap[childfromfieldnamearr1[1]]
+				val := reflect.ValueOf(arg)
+				kind := val.Kind()
+				if kind == reflect.Slice {
+
+					argarr := arg.([]interface{})
+					for idx, arg1 := range argarr {
+						textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+						if idx < len(argarr)-1 {
+							textfld = textfld + ","
+						}
+					}
+
+				} else {
+					textfld = orm.ToStr(arg)
+					if strings.Contains(textfld, "ObjectIdHex") {
+						textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+						textfld = strings.Replace(textfld, "\")", "", -1)
+					} else {
+						if len(textfld) >= 8 {
+							if len(textfld) == 8 { //2019-1-1 2019/1/1
+								ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+								if err == nil {
+									if ismatch {
+										textfld = strings.ReplaceAll(textfld, "/", "-")
+										textfldarr := strings.Split(textfld, "-")
+										textfld = textfldarr[0]
+										if len(textfldarr[1]) == 2 {
+											textfld = textfld + textfldarr[1]
+										} else {
+											textfld = textfld + "0" + textfldarr[1]
+										}
+										if len(textfldarr[2]) == 2 {
+											textfld = textfld + textfldarr[2]
+										} else {
+											textfld = textfld + "0" + textfldarr[2]
+										}
+										newt := Convert2time(textfld)
+										hh, _ := time.ParseDuration("8h")
+										textfld = orm.ToStr(newt.Add(hh))
+									}
+								}
+							} else { //2019-01-01 2019/01/01
+								ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+								if err == nil {
+									if ismatch {
+										textfld = strings.ReplaceAll(textfld, "/", "-")
+										newt := Convert2time(textfld)
+										hh, _ := time.ParseDuration("8h")
+										textfld = orm.ToStr(newt.Add(hh))
+									}
+								}
+
+							}
+						}
+					}
+
+				}
+				insertparams = append(insertparams, textfld)
+			}
+			_, err = o.Raw(insertsql, insertparams...).Exec()
+			if err != nil {
+				o.Rollback()
+				Getlog().Error(err.Error())
+				return err
+			}
+		}
+	}
+	err = o.Commit()
+
+	return nil
+}
+
+//从mongodb中同步父子子表的数据，例如从trainer取historyAnnualInfos
+//fromdatasource：源数据源。例如tap_mongodb
+//fromtable：源collectionname。例如trainer
+//fromkey：源表过滤条件。可以没有过滤条件
+//fromfieldname：源表查询字段。例如：_id,historyAnnualInfos.workingYear,historyAnnualInfos.activeAttrs.workingMonth,historyAnnualInfos.activeAttrs.trainerKeys,historyAnnualInfos.activeAttrs.teamKeys,historyAnnualInfos.activeAttrs.target,historyAnnualInfos.activeAttrs.taLevel,historyAnnualInfos.activeAttrs.startDate,historyAnnualInfos.activeAttrs.jobRolePercent,historyAnnualInfos.activeAttrs.jobRole,historyAnnualInfos.activeAttrs.headTeacherOfBest,historyAnnualInfos.activeAttrs.endDate,historyAnnualInfos.activeAttrs.competency,historyAnnualInfos.activeAttrs.annualTrainingTarget
+//datasource:目标数据源。例如target_mysql
+//tablename：目标表。例如trainer_historyAnnualInfos_activeAttrs
+//fieldname：目标字段parentid,workingYear,workingMonth,trainerKeys,teamKeys,target,taLevel,startDate,jobRolePercent,jobRole,headTeacherOfBest,endDate,competency,annualTrainingTarget
+func Synparentchildchildtable(fromdatasource, fromtable, fromfieldname, fromkey, datasource, tablename, fieldname string) (err error) {
+	fromds, err := GetDATASOURCEBYID(DATASOURCE{Datasource: fromdatasource})
+	if err != nil {
+		Getlog().Error("GetDATASOURCEBYID==>" + err.Error())
+		return err
+	}
+	monconn, err := GetMongoConn(fromds)
+	if err != nil {
+		Getlog().Error("GetMongoConn==>" + err.Error())
+		return err
+	}
+	data := make([]map[string]interface{}, 0)
+	if fromkey == "" {
+		data, err = monconn.Getcollectiondataforparentchild(fromds.Schema, fromtable, fromfieldname)
+		if err != nil {
+			Getlog().Error("Getcollectiondataforparentchild==>" + err.Error())
+			return err
+		}
+	} else {
+		fromkeyparam := make([]interface{}, 0)
+		fromkeyparam = append(fromkeyparam, fromkey)
+		data, err = monconn.Getcollectiondataforparentchild(fromds.Schema, fromtable, fromfieldname, fromkeyparam)
+		if err != nil {
+			Getlog().Error("Getcollectiondataforparentchild==>" + err.Error())
+			return err
+		}
+	}
+
+	if len(data) < 1 {
+		return errors.New(fromtable + " has no data for parentchildchild")
+	}
+
+	ds, err := GetDATASOURCEBYID(DATASOURCE{Datasource: datasource})
+	if err != nil {
+
+		Getlog().Error("GetDATASOURCEBYID==>" + err.Error())
+		return err
+	}
+	targetdb, err := GetMysqlConn(ds)
+	if err != nil {
+
+		Getlog().Error("GetMysqlConn==>" + err.Error())
+		return err
+	}
+	o, err := orm.NewOrmWithDB("mysql", ds.Datasource, targetdb)
+
+	if err != nil {
+
+		Getlog().Error("NewOrmWithDB==>" + err.Error())
+		return err
+	}
+
+	fieldnamearr := strings.Split(fieldname, ",")
+	insertsql1 := "("
+	for idx, fieldname1 := range fieldnamearr {
+		insertsql1 = insertsql1 + fieldname1
+		if idx < len(fieldnamearr)-1 {
+			insertsql1 = insertsql1 + ","
+		}
+		if idx == len(fieldnamearr)-1 {
+			insertsql1 = insertsql1 + ") values("
+		}
+	}
+	for idx, _ := range fieldnamearr {
+		insertsql1 = insertsql1 + "?"
+		if idx < len(fieldnamearr)-1 {
+			insertsql1 = insertsql1 + ","
+		}
+		if idx == len(fieldnamearr)-1 {
+			insertsql1 = insertsql1 + ")"
+		}
+	}
+
+	insertsql := "insert into " + tablename + insertsql1
+	truncatetablesql := "truncate table " + tablename
+	o.Begin()
+	_, err = o.Raw(truncatetablesql).Exec()
+	if err != nil {
+		o.Rollback()
+		Getlog().Error(err.Error())
+		return err
+	}
+
+	fromfieldnamearr := strings.Split(fromfieldname, ",")
+	fromfieldnamearr2 := strings.Split(fromfieldnamearr[1], ".")
+	childfromfieldnamearr := fromfieldnamearr[1:]
+
+	for _, datamap := range data {
+		if datamap[fromfieldnamearr2[0]] == nil {
+			continue
+		}
+		childdata := datamap[fromfieldnamearr2[0]].([]interface{})
+		parent := ""
+		if fromfieldnamearr[0] == "_id" {
+			parent = strings.Replace(orm.ToStr(datamap[fromfieldnamearr[0]]), "ObjectIdHex(\"", "", -1)
+			parent = strings.Replace(parent, "\")", "", -1)
+		} else {
+			parent = orm.ToStr(datamap[fromfieldnamearr[0]])
+		}
+
+		for _, child := range childdata {
+			insertparams := make([]interface{}, 0)
+
+			insertparams = append(insertparams, parent)
+
+			if child == nil {
+				continue
+			}
+			childmap := child.(map[string]interface{})
+			for _, childfromfieldname := range childfromfieldnamearr {
+				childfromfieldnamearr1 := strings.Split(childfromfieldname, ".")
+				if len(childfromfieldnamearr1) == 2 {
+					textfld := ""
+					arg := childmap[childfromfieldnamearr1[1]]
+
+					val := reflect.ValueOf(arg)
+					kind := val.Kind()
+					if kind == reflect.Slice {
+
+						argarr := arg.([]interface{})
+						for idx, arg1 := range argarr {
+							textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+							if idx < len(argarr)-1 {
+								textfld = textfld + ","
+							}
+						}
+
+					} else {
+						textfld = orm.ToStr(arg)
+						if strings.Contains(textfld, "ObjectIdHex") {
+							textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+							textfld = strings.Replace(textfld, "\")", "", -1)
+						} else {
+							if len(textfld) >= 8 {
+								if len(textfld) == 8 { //2019-1-1 2019/1/1
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											textfldarr := strings.Split(textfld, "-")
+											textfld = textfldarr[0]
+											if len(textfldarr[1]) == 2 {
+												textfld = textfld + textfldarr[1]
+											} else {
+												textfld = textfld + "0" + textfldarr[1]
+											}
+											if len(textfldarr[2]) == 2 {
+												textfld = textfld + textfldarr[2]
+											} else {
+												textfld = textfld + "0" + textfldarr[2]
+											}
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+								} else { //2019-01-01 2019/01/01
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+
+								}
+							}
+						}
+
+					}
+					insertparams = append(insertparams, textfld)
+				} else {
+					textfld := ""
+					childarg := childmap[childfromfieldnamearr1[1]]
+					childchildmap := childarg.(map[string]interface{})
+					arg := childchildmap[childfromfieldnamearr1[2]]
+
+					val := reflect.ValueOf(arg)
+					kind := val.Kind()
+					if kind == reflect.Slice {
+
+						argarr := arg.([]interface{})
+						for idx, arg1 := range argarr {
+							textfld = textfld + strings.TrimSpace(orm.ToStr(arg1))
+							if idx < len(argarr)-1 {
+								textfld = textfld + ","
+							}
+						}
+
+					} else {
+						textfld = orm.ToStr(arg)
+						if strings.Contains(textfld, "ObjectIdHex") {
+							textfld = strings.Replace(textfld, "ObjectIdHex(\"", "", -1)
+							textfld = strings.Replace(textfld, "\")", "", -1)
+						} else {
+							if len(textfld) >= 8 {
+								if len(textfld) == 8 { //2019-1-1 2019/1/1
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											textfldarr := strings.Split(textfld, "-")
+											textfld = textfldarr[0]
+											if len(textfldarr[1]) == 2 {
+												textfld = textfld + textfldarr[1]
+											} else {
+												textfld = textfld + "0" + textfldarr[1]
+											}
+											if len(textfldarr[2]) == 2 {
+												textfld = textfld + textfldarr[2]
+											} else {
+												textfld = textfld + "0" + textfldarr[2]
+											}
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+								} else { //2019-01-01 2019/01/01
+									ismatch, err := regexp.MatchString(`^\d{4}[-|/]\d{1,2}[-|/]\d{1,2}`, textfld)
+									if err == nil {
+										if ismatch {
+											textfld = strings.ReplaceAll(textfld, "/", "-")
+											newt := Convert2time(textfld)
+											hh, _ := time.ParseDuration("8h")
+											textfld = orm.ToStr(newt.Add(hh))
+										}
+									}
+
+								}
+							}
+						}
+
+					}
+					insertparams = append(insertparams, textfld)
+
+				}
 			}
 			_, err = o.Raw(insertsql, insertparams...).Exec()
 			if err != nil {

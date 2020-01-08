@@ -271,7 +271,8 @@ func (conn *MongoConn) Getcollectionfieldinfo(databasename string, collectionnam
 		fmt.Println(err)
 		return nil, err
 	}
-	for i := len(datas) - 1; i > 1000; i-- {
+	// Getlog().Debug("conn.Getcollectiondatas==>" + orm.ToStr(datas))
+	for i := 0; i < len(datas); i++ {
 
 		datamap := datas[i]
 
